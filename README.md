@@ -186,33 +186,25 @@ GET http://localhost:8080/api/report/tushar-test-org
 
 ## 🖥 Application Running
 
-> Add image here
-
-```
-screenshots/application-running.png
-```
+![Application Running](screenshots/application-running.png)
 
 ---
 
 ## 📘 Swagger UI
 
-> Add image here
-
-```
-screenshots/swagger-ui.png
-```
+![Swagger UI](screenshots/swagger-ui.png)
 
 ---
 
 ## 📬 API Response (Postman)
 
-> Add image here
-
-```
-screenshots/postman-response.png
-```
+![Postman Response](screenshots/postman-response.png)
 
 ---
+
+## 📁 Project Structure
+
+![Project Structure](screenshots/project-structure.png)
 
 ## 📁 Project Structure
 
