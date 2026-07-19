@@ -1,0 +1,30 @@
+# ═══════════════════════════════════════════════════════════════════
+#  GitHub Report API – Test Configuration
+#  Overrides application.yml for the test environment.
+#  WireMock stubs run on a fixed port; the token is a dummy value.
+# ═══════════════════════════════════════════════════════════════════
+
+github:
+  # WireMock server base URL used in integration tests
+  base-url: http://localhost:8089
+  # Dummy token — real auth is not exercised in unit/integration tests
+  token: test-token
+  api-version: 2022-11-28
+  page-size: 10
+  concurrency: 2
+  retry:
+    max-attempts: 2
+    initial-backoff-ms: 100
+    max-backoff-ms: 500
+  timeout:
+    connect-seconds: 5
+    read-seconds: 10
+
+report:
+  cache:
+    ttl-minutes: 1
+    max-size: 10
+
+logging:
+  level:
+    com.github.report: INFO

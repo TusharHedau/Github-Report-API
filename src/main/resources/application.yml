@@ -1,0 +1,103 @@
+# ═══════════════════════════════════════════════════════════════════
+#  GitHub Report API – Application Configuration
+#  All environment-variable-backed values can be overridden at runtime
+#  via env vars or a .env file mounted in Docker.
+# ═══════════════════════════════════════════════════════════════════
+
+# ── Server ──────────────────────────────────────────────────────────
+server:
+  port: 8082
+  # Provides clean, machine-readable error bodies
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# ── Spring ───────────────────────────────────────────────────────────
+spring:
+  application:
+    name: github-report-api
+
+  # ── Cache (Caffeine) ───────────────────────────────────────────────
+  cache:
+    type: caffeine
+    # caffeine.spec is built dynamically in CacheConfig to allow per-cache TTLs.
+    # This default spec acts as a fallback for any auto-configured cache.
+    caffeine:
+      spec: maximumSize=200,expireAfterWrite=5m
+
+# ── GitHub Integration ───────────────────────────────────────────────
+github:
+  # Base URL for all GitHub REST API v3 calls.
+  # Separated so it can be pointed at GitHub Enterprise or a WireMock stub
+  # in tests without changing any Java code.
+  base-url: https://api.github.com
+
+  # Personal Access Token injected from the environment variable GITHUB_TOKEN.
+  # NEVER hard-code a real token here.
+  token: ${GITHUB_TOKEN:}
+
+  # GitHub REST API version header (required since 2022-11-28 for preview features)
+  api-version: 2022-11-28
+
+  # Maximum number of items per page when paginating list endpoints.
+  # GitHub's hard cap is 100.
+  page-size: 100
+
+  # Maximum number of repositories whose collaborators are fetched concurrently.
+  # Increasing this speeds up report generation but consumes more of the
+  # GitHub rate-limit budget simultaneously. 10 is a safe default for most orgs.
+  concurrency: 10
+
+  # ── Retry / back-off ────────────────────────────────────────────
+  retry:
+    # Maximum attempts before propagating the error to the caller
+    max-attempts: 3
+    # Base delay (ms) for the first retry; doubles on each subsequent attempt
+    initial-backoff-ms: 1000
+    # Upper ceiling for back-off delay (ms) to avoid very long waits
+    max-backoff-ms: 30000
+
+  # ── Timeouts ────────────────────────────────────────────────────
+  timeout:
+    # Total time (seconds) to wait for a single GitHub API request
+    connect-seconds: 10
+    read-seconds: 30
+
+# ── Report Cache ─────────────────────────────────────────────────────
+report:
+  cache:
+    # How long (minutes) a generated report is kept before being evicted
+    ttl-minutes: 5
+    # Maximum number of distinct organisation reports kept in memory
+    max-size: 50
+
+# ── Actuator ─────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# ── Logging ──────────────────────────────────────────────────────────
+logging:
+  level:
+    # Show WebClient request/response in DEBUG for easier local troubleshooting
+    com.github.report: DEBUG
+    # Uncomment the lines below to trace raw Netty / Reactor traffic
+    # reactor.netty.http.client: DEBUG
+    # io.netty: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# ── Springdoc / OpenAPI ──────────────────────────────────────────────
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    # Show the request duration in the Swagger UI response panel
+    display-request-duration: true
+  show-actuator: false

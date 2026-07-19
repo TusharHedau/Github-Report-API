@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- ─────────────────────────────────────────────────────────────────
+         Spring Boot Parent BOM – manages transitive dependency versions
+         so we don't have to pin every library manually.
+    ───────────────────────────────────────────────────────────────────── -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.3.0</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.github.report</groupId>
+    <artifactId>github-report-api</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>github-report-api</name>
+    <description>
+        REST API that connects to GitHub and generates a report showing
+        which users have access to which repositories in an organisation.
+    </description>
+
+    <!-- ─────────────────────────────────────────────────────────────────
+         Global properties
+    ───────────────────────────────────────────────────────────────────── -->
+    <properties>
+        <java.version>21</java.version>
+        <!-- Swagger / OpenAPI -->
+        <springdoc.version>2.5.0</springdoc.version>
+        <!-- Caffeine cache -->
+        <caffeine.version>3.1.8</caffeine.version>
+        <!-- WireMock for integration tests -->
+        <wiremock.version>3.6.0</wiremock.version>
+        <!-- Reactor Test -->
+        <reactor-test.version>3.6.6</reactor-test.version>
+    </properties>
+
+    <dependencies>
+
+        <!-- ── Spring Boot starters ─────────────────────────────────── -->
+
+        <!--
+            spring-boot-starter-webflux
+            • Brings in Spring WebFlux (reactive HTTP) and the Netty server.
+            • We use WebClient (part of WebFlux) for non-blocking GitHub API
+              calls — essential for the 100+ repos / 1000+ users scale requirement.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
+        <!--
+            spring-boot-starter-cache
+            • Enables Spring's @EnableCaching / @Cacheable abstraction.
+            • Caffeine is plugged in as the actual cache provider (see below).
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+
+        <!--
+            spring-boot-starter-validation
+            • Bean Validation (jakarta.validation) used to validate request
+              path variables and query parameters in the controller layer.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!--
+            spring-boot-starter-actuator
+            • Exposes /actuator/health, /actuator/info etc.
+            • Useful in Docker/K8s health checks without any extra coding.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- ── Caching ───────────────────────────────────────────────── -->
+
+        <!--
+            Caffeine
+            • High-performance, near-optimal in-memory cache backed by
+              the W-TinyLFU eviction policy.
+            • Plugs into Spring Cache via CaffeineCacheManager.
+        -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>${caffeine.version}</version>
+        </dependency>
+
+        <!-- ── Swagger / OpenAPI ─────────────────────────────────────── -->
+
+        <!--
+            springdoc-openapi-starter-webflux-ui
+            • Auto-generates OpenAPI 3.0 spec from annotations.
+            • The webflux variant is required because we use WebFlux, not MVC.
+            • Serves Swagger UI at /swagger-ui.html and JSON at /v3/api-docs.
+        -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+            <version>${springdoc.version}</version>
+        </dependency>
+
+        <!-- ── Code generation / boilerplate ────────────────────────── -->
+
+        <!--
+            Lombok
+            • Reduces boilerplate: @Data, @Builder, @Slf4j, @RequiredArgsConstructor.
+            • 'provided' scope: used only at compile time, not shipped in the JAR.
+        -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- ── Testing ───────────────────────────────────────────────── -->
+
+        <!--
+            spring-boot-starter-test
+            • Includes JUnit 5, Mockito, AssertJ, Spring Test context.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
+            reactor-test (StepVerifier)
+            • Essential for testing reactive Mono/Flux streams from WebClient.
+        -->
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
+            WireMock
+            • HTTP mock server used in integration tests for GithubClient.
+            • Simulates GitHub API pagination, rate-limit headers, etc.
+              without hitting the real API during CI.
+        -->
+        <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+            <version>${wiremock.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+
+            <!--
+                spring-boot-maven-plugin
+                • Packages the app as an executable fat-JAR.
+                • Configured to exclude Lombok from the final artifact.
+            -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <!--
+                maven-compiler-plugin
+                • Targets Java 21; enables the Lombok annotation processor.
+                • annotationProcessorPaths ensures Lombok runs before the
+                  compiler so generated code is visible.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>
